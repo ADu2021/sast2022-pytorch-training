@@ -30,7 +30,7 @@ def get_loader(args):
     if args.mode == "train":
         dataset = LandScapeDataset(args.mode)
         # TODO Start: Finish dataloader here #
-        dataloader = None
+        dataloader = DataLoader(dataset, shuffle=True, num_workers=num_workers, batch_size=args.batch_size)
         # TODO End #
     elif args.mode == "test":
         dataset = LandScapeDataset(args.mode)
@@ -55,6 +55,7 @@ def load_model(args, model, optimizer):
     checkpoint = torch.load(args.checkpoint_path)
     model.load_state_dict(checkpoint['model'])
     # TODO Start: load state dict for optimizer #
+    optimizer.load_state_dict(checkpoint['optimizer'])
 
     # TODO End #
 
@@ -75,14 +76,19 @@ def train_one_epoch(epoch, train_loader, args, model, criterion, optimizer, stat
     print(f"==> [Epoch {epoch + 1}] Starting Training...")
     for train_idx, train_data in tqdm(enumerate(train_loader), total=len(train_loader)):
         train_input, train_label = train_data["image"].to(args.device), train_data["label"].to(args.device)
-        pred_label = model(train_input)
+        pred_label = model(train_input.float()).float()
+        print(pred_label.size()) 
+        print(train_label.size())
+        
 
         # TODO Start: understand this...
-        # optimizer.zero_grad()
-        # loss = criterion(pred_label.reshape(-1, 2), train_label.reshape(-1).long())
-        # loss.backward()
-        # optimizer.step()
+        optimizer.zero_grad()
+        loss = criterion(pred_label.reshape(-1, 2), train_label.reshape(-1).long())
+        loss.backward()
+        optimizer.step()
         # TODO END
+
+        assert True == False
 
         if train_idx % args.print_freq == 0:
             # Calc accuracy for display of current batch

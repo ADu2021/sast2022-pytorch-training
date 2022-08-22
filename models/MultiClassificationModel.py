@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 from typing import List
 
+from torchvision.models import resnet18, ResNet18_Weights
+
 
 class MultiClassificationModel(nn.Module):
     def __init__(self, num_categories=3):
@@ -62,7 +64,7 @@ class ClassificationHead(nn.Module):
     def __init__(self):
         super(ClassificationHead, self).__init__()
         self.linear = nn.ModuleList([
-            nn.Linear(512 * (1024 // 4 // 32) * (768 // 4 // 32), 64),
+            nn.Linear(512 * (1024 // 4 // 32) * (768 // 4 // 32), 64), #24576->64
             nn.Linear(64, 16),
             nn.Linear(16, 2),
         ])
@@ -74,3 +76,34 @@ class ClassificationHead(nn.Module):
         f1 = self.dropout(self.relu(self.linear[0](features)))
         f2 = self.dropout(self.relu(self.linear[1](f1)))
         return self.softmax(self.linear[2](f2))
+
+
+
+
+class ResNetPredictor(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        weights = ResNet18_Weights.DEFAULT
+        self.resnet18 = resnet18().eval()
+        self.transforms = weights.transforms()
+
+    def forward(self, x):
+        with torch.no_grad():
+            x = self.transforms(x)
+            print(x.requires_grad)
+            y1_pred = self.resnet18(x).argmax(dim=1)
+            print(y1_pred.requires_grad)
+            y2_pred = self.resnet18(x).argmax(dim=1)
+            print(y2_pred.requires_grad)
+            y3_pred = self.resnet18(x).argmax(dim=1)
+            print(y3_pred.requires_grad)
+            y_pred = torch.stack([y1_pred, y2_pred, y3_pred], dim=1).float()
+            print(y_pred.requires_grad)
+            y_another = torch.ones_like(y_pred, requires_grad=True)
+            print(y_another.requires_grad)
+            y_another = torch.sub(y_another, y_pred)
+            print(y_another.requires_grad)
+            y_pred = torch.cat([y_pred, y_another], dim=1)
+            print(y_pred.requires_grad)
+            return y_pred

@@ -4,6 +4,7 @@ from PIL import Image
 from tqdm import tqdm
 from pathlib import Path
 from argparse import ArgumentParser
+import re
 
 
 def calc_label(label: np.ndarray, threshold: float):
@@ -24,8 +25,17 @@ def calc_label(label: np.ndarray, threshold: float):
     }
 
     # TODO Start: Finish this function #
-    raise NotImplementedError
-    return {"mountain": True, "sky": True, "water": True}
+
+    mountain_label = np.isin(label, label2id["mountain"])
+    sky_label = np.isin(label, label2id["sky"])
+    water_label = np.isin(label, label2id["water"])
+
+    mountain_proportion = np.sum(mountain_label) / label.size
+    sky_proportion = np.sum(sky_label) / label.size
+    water_proportion = np.sum(water_label) / label.size
+
+    return {"mountain": mountain_proportion > threshold, "sky": sky_proportion > threshold, "water": water_proportion > threshold}
+
     # TODO End #
 
 
@@ -40,8 +50,8 @@ def process_data(mode: str, threshold: float):
 
     # TODO Start: Append directory in pathlib.Path, so that they point to `./data/{mode}/imgs`
     #  and `./data/{mode}/labels` #
-    image_dir = None
-    label_dir = None
+    image_dir = (working_dir / "imgs").resolve()
+    label_dir = (working_dir / "labels").resolve()
     # TODO End #
 
     print(f"[Data] Now in {working_dir}...")
@@ -54,7 +64,12 @@ def process_data(mode: str, threshold: float):
 
     # TODO Start: Construct a list of filenames without suffix from image_dir, like ['48432_b67ec6cd63_b',
     #  '70190_90b25efb3b_b', ...] #
-    filename_list = [None, None, ...]
+    filename_list = []
+    for filename in os.listdir(image_dir):
+        try:
+            filename_list.append(re.match("(.+)\..+",filename)[1])
+        except:
+            pass
     # TODO End #
 
     for idx, file_name in tqdm(enumerate(filename_list), total=len(filename_list)):
@@ -70,7 +85,9 @@ def process_data(mode: str, threshold: float):
 
     # After all file has been processed, write `out_str` to `{working_dir}/file.txt`
     # TODO Start: Write out_str to `{working_dir}/file.txt` in overwritten mode #
-    raise NotImplementedError
+    with open(str(working_dir / "file.txt"), "w") as f:
+        f.write(out_str)
+
     # TODO End #
 
 
